@@ -21,6 +21,13 @@ fn main() {
     env::commit(&answer);
 }
 
-fn fibonacci(n: u32) -> u64 {
-    Matrix2::new(1, 1, 1, 0).pow(n - 1)[(0, 0)]
+fn fibonacci(n: u32) -> u32 {
+    let mut a: u32 = 0;
+    let mut b: u32 = 1;
+    for _ in 0..n {
+        let sum = (a + b) % 7919; // Mod to avoid overflow
+        a = b;
+        b = sum;
+    }
+    b
 }
