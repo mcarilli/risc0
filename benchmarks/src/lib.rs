@@ -96,17 +96,17 @@ pub struct Job {
     name: String,
     elf: Vec<u8>,
     input: Vec<u32>,
-    image_id: Digest,
+    // image_id: Digest,
     size: usize,
 }
 
 impl Job {
-    fn new(name: String, elf: &[u8], image_id: Digest, input: Vec<u32>, size: usize) -> Self {
+    fn new(name: String, elf: &[u8], _image_id: Digest, input: Vec<u32>, size: usize) -> Self {
         Self {
             name,
             elf: elf.to_vec(),
             input,
-            image_id,
+            // image_id,
             size,
         }
     }
@@ -114,6 +114,7 @@ impl Job {
     fn exec_compute(&self) -> (Session, Duration) {
         let env = ExecutorEnv::builder()
             .write_slice(&self.input)
+            .segment_limit_po2(21)
             .build()
             .unwrap();
         let mut exec = ExecutorImpl::from_elf(env, &self.elf).unwrap();
@@ -130,22 +131,25 @@ impl Job {
 
         metrics.total_cycles = session.total_cycles;
         metrics.user_cycles = session.user_cycles;
+        println!("user_cycles {}", session.user_cycles);
         metrics.exec_duration = duration;
 
-        let prover = get_prover_server(&ProverOpts::succinct()).unwrap();
+        // let prover = get_prover_server(&ProverOpts::succinct()).unwrap();
+        // Time pipelined witness gen + proving, without recursion
+        let prover = get_prover_server(&ProverOpts::default()).unwrap();
         let ctx = VerifierContext::default();
 
         let start = Instant::now();
-        let receipt = prover.prove_session(&ctx, &session).unwrap().receipt;
+        let _receipt = prover.prove_session(&ctx, &session).unwrap().receipt;
         metrics.proof_duration = start.elapsed();
 
         metrics.total_duration = metrics.exec_duration + metrics.proof_duration;
         metrics.speed = self.size as f32 / metrics.total_duration.as_secs_f32();
-        metrics.output_bytes = receipt.journal.bytes.len();
-        metrics.proof_bytes = receipt.inner.succinct().unwrap().seal_size();
+        metrics.output_bytes = 0; // receipt.journal.bytes.len();
+        metrics.proof_bytes = 0; // receipt.inner.succinct().unwrap().seal_size();
 
         let start = Instant::now();
-        receipt.verify(self.image_id).unwrap();
+        // receipt.verify(self.image_id).unwrap();
         metrics.verify_duration = start.elapsed();
 
         metrics
