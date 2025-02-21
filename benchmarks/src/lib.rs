@@ -135,6 +135,7 @@ impl Job {
         metrics.exec_duration = duration;
 
         // let prover = get_prover_server(&ProverOpts::succinct()).unwrap();
+        // Time pipelined witness gen + proving, without recursion
         let prover = get_prover_server(&ProverOpts::default()).unwrap();
         let ctx = VerifierContext::default();
 
